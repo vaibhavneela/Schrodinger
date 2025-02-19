@@ -5,22 +5,23 @@
 </head>
 <body>
     <h2>Habit Tracker</h2>
+
+    <!-- Form to Add a New Habit -->
     <form method="POST">
-        <input type="text" name="habit_name" placeholder="Enter Habit" required>
-        <input type="time" name="reminder_time">
+        <input type="text" name="habit_name" placeholder="Enter habit name" required>
+        <input type="time" name="reminder_time" required>
         <button type="submit">Add Habit</button>
     </form>
 
+    <br>
+
+    <!-- Display Existing Habits -->
     <h3>Your Habits</h3>
     <ul>
         {% for habit in habits %}
             <li>
-                {{ habit.habit_name }} - Reminder: {{ habit.reminder_time or 'No Reminder' }}
-                {% if not habit.completed %}
-                    <a href="{{ url_for('complete_habit', habit_id=habit.id) }}">Mark as Done</a>
-                {% else %}
-                    ✅ Completed
-                {% endif %}
+                {{ habit.habit_name }} - Reminder at {{ habit.reminder_time }}
+                <a href="{{ url_for('remove_habit', habit_id=habit.id) }}" style="color: red;">Remove</a>
             </li>
         {% endfor %}
     </ul>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Calorie Tracker</title>
+</head>
+<body>
+    <h2>Calorie Tracker</h2>
+    
+    {% if calorie_data %}
+        <p>Weight: {{ calorie_data.weight }} kg</p>
+        <p>Height: {{ calorie_data.height }} cm</p>
+        <p>Age: {{ calorie_data.age }} years</p>
+        <p>Goal: {{ calorie_data.goal }}</p>
+        <p>Daily Calorie Requirement: {{ calorie_data.bmr }} kcal</p>
+
+        <br>
+        <a href="/reset-calorie-tracker" style="color: red;">Reset Calorie Data</a>
+
+    {% else %}
+        <form method="POST">
+            <input type="number" name="weight" placeholder="Weight (kg)" required>
+            <input type="number" name="height" placeholder="Height (cm)" required>
+            <input type="number" name="age" placeholder="Age" required>
+            <select name="goal">
+                <option value="maintain">Maintain Weight</option>
+                <option value="gain">Gain Weight</option>
+                <option value="lose">Lose Weight</option>
+            </select>
+            <button type="submit">Calculate</button>
+        </form>
+    {% endif %}
+
+    <br>
+    <a href="/dashboard">Back to Dashboard</a>
+</body>
+</html>
