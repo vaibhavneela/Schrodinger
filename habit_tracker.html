@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Habit Tracker</title>
+</head>
+<body>
+    <h2>Habit Tracker</h2>
+    <form method="POST">
+        <input type="text" name="habit_name" placeholder="Enter Habit" required>
+        <input type="time" name="reminder_time">
+        <button type="submit">Add Habit</button>
+    </form>
+
+    <h3>Your Habits</h3>
+    <ul>
+        {% for habit in habits %}
+            <li>
+                {{ habit.habit_name }} - Reminder: {{ habit.reminder_time or 'No Reminder' }}
+                {% if not habit.completed %}
+                    <a href="{{ url_for('complete_habit', habit_id=habit.id) }}">Mark as Done</a>
+                {% else %}
+                    ✅ Completed
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+
+    <br>
+    <a href="/dashboard">Back to Dashboard</a>
+</body>
+</html>

@@ -2,13 +2,11 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# Initialize Flask app
 app = Flask(__name__)
 app.secret_key = 'youshouldnotknowthis'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Initialize database
 db = SQLAlchemy(app)
 
 # User Model
@@ -18,7 +16,15 @@ class User(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
 
-# Create database table
+# Habit Tracker Model
+class Habit(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Link to User
+    habit_name = db.Column(db.String(100), nullable=False)
+    reminder_time = db.Column(db.String(10), nullable=True)  # Optional reminder
+    completed = db.Column(db.Boolean, default=False)  # Default is not completed
+
+# Create tables
 with app.app_context():
     db.create_all()
 
@@ -77,6 +83,44 @@ def logout():
     flash("Logged out successfully.", "info")
     return redirect(url_for('login'))
 
-# Run Flask App
+# Habit Tracker Route
+@app.route('/habit-tracker', methods=['GET', 'POST'])
+def habit_tracker():
+    if 'user_id' not in session:
+        flash("Please login first.", "warning")
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+
+    if request.method == 'POST':
+        habit_name = request.form['habit_name']
+        reminder_time = request.form['reminder_time']
+
+        new_habit = Habit(user_id=user_id, habit_name=habit_name, reminder_time=reminder_time)
+        db.session.add(new_habit)
+        db.session.commit()
+        flash("Habit added successfully!", "success")
+        return redirect(url_for('habit_tracker'))
+
+    habits = Habit.query.filter_by(user_id=user_id).all()
+    return render_template('habit_tracker.html', habits=habits)
+
+# Mark Habit as Completed
+@app.route('/complete-habit/<int:habit_id>')
+def complete_habit(habit_id):
+    if 'user_id' not in session:
+        flash("Please login first.", "warning")
+        return redirect(url_for('login'))
+
+    habit = Habit.query.get_or_404(habit_id)
+    if habit.user_id != session['user_id']:
+        flash("Unauthorized action!", "danger")
+        return redirect(url_for('habit_tracker'))
+
+    habit.completed = True
+    db.session.commit()
+    flash("Habit marked as completed!", "success")
+    return redirect(url_for('habit_tracker'))
+
 if __name__ == "__main__":
     app.run(debug=True)
