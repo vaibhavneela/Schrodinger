@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Workout Tracker</title>
+</head>
+<body>
+    <h2>Workout Tracker</h2>
+
+    <!-- Form to Add a New Workout -->
+    <form method="POST">
+        <input type="text" name="workout_name" placeholder="Enter workout name" required>
+        <select name="day_of_week">
+            <option value="Monday">Monday</option>
+            <option value="Tuesday">Tuesday</option>
+            <option value="Wednesday">Wednesday</option>
+            <option value="Thursday">Thursday</option>
+            <option value="Friday">Friday</option>
+            <option value="Saturday">Saturday</option>
+            <option value="Sunday">Sunday</option>
+        </select>
+        <button type="submit">Add Workout</button>
+    </form>
+
+    <br>
+
+    <!-- Display Scheduled Workouts -->
+    <h3>Your Workouts</h3>
+    <ul>
+        {% for workout in workouts %}
+            <li>
+                {{ workout.workout_name }} - {{ workout.day_of_week }}
+                <a href="{{ url_for('remove_workout', workout_id=workout.id) }}" style="color: red;">Remove</a>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <br>
+    <a href="/dashboard">Back to Dashboard</a>
+</body>
+</html>

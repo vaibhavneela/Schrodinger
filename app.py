@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+import ollama
+
 
 app = Flask(__name__)
 app.secret_key = 'youshouldnotknowthis'
@@ -23,7 +25,7 @@ class CalorieData(db.Model):
     weight = db.Column(db.Float, nullable=False)
     height = db.Column(db.Float, nullable=False)
     age = db.Column(db.Integer, nullable=False)
-    goal = db.Column(db.String(10), nullable=False) 
+    goal = db.Column(db.String(10), nullable=False)
     bmr = db.Column(db.Float, nullable=False)  # Basal Metabolic Rate
 
 # Habit Tracker Model
@@ -34,13 +36,20 @@ class Habit(db.Model):
     reminder_time = db.Column(db.String(10), nullable=True)
     completed = db.Column(db.Boolean, default=False)
 
+# Workout Tracker Model
+class Workout(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    workout_name = db.Column(db.String(100), nullable=False)
+    day_of_week = db.Column(db.String(20), nullable=False)
+
 # Create tables
 with app.app_context():
     db.create_all()
 
 # Utility function to calculate BMR
 def calculate_bmr(weight, height, age, goal):
-    bmr = 10 * weight + 6.25 * height - 5 * age + 5  # Mifflin-St Jeor Equation (for men)
+    bmr = 10 * weight + 6.25 * height - 5 * age + 5  # Mifflin-St Jeor Equation
     if goal == "gain":
         return bmr + 500  # Increase calories
     elif goal == "lose":
@@ -180,6 +189,76 @@ def remove_habit(habit_id):
         flash("Habit removed successfully.", "info")
 
     return redirect(url_for('habit_tracker'))
+
+# Workout Tracker Route
+@app.route('/workout-tracker', methods=['GET', 'POST'])
+def workout_tracker():
+    if 'user_id' not in session:
+        flash("Please login first.", "warning")
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+
+    if request.method == 'POST':
+        workout_name = request.form['workout_name']
+        day_of_week = request.form['day_of_week']
+        new_workout = Workout(user_id=user_id, workout_name=workout_name, day_of_week=day_of_week)
+        db.session.add(new_workout)
+        db.session.commit()
+        flash("Workout added successfully!", "success")
+        return redirect(url_for('workout_tracker'))
+
+    workouts = Workout.query.filter_by(user_id=user_id).all()
+    return render_template('workout_tracker.html', workouts=workouts)
+
+# Route to remove a workout
+@app.route('/remove-workout/<int:workout_id>')
+def remove_workout(workout_id):
+    if 'user_id' not in session:
+        flash("Please login first.", "warning")
+        return redirect(url_for('login'))
+
+    workout = Workout.query.get_or_404(workout_id)
+    if workout.user_id != session['user_id']:
+        flash("Unauthorized action!", "danger")
+        return redirect(url_for('workout_tracker'))
+
+    db.session.delete(workout)
+    db.session.commit()
+    flash("Workout removed successfully!", "info")
+    return redirect(url_for('workout_tracker'))
+
+#Route to Health Chatbot
+@app.route('/chatbot', methods=['GET', 'POST'])
+def chatbot_view():
+    response_text = ""
+
+    if request.method == 'POST':
+        user_input = request.form['user_input']
+        
+        messages = [
+            {
+                "role": "system",
+                "content": "nYou are a concise and supportive health assistant. Your goal is to help users with simple and practical advice on nutrition, exercise, and habit-building. \
+                - **Keep responses short and to the point.** Aim for 2-3 sentences max. \
+                - **Health Advice:** Offer quick, science-backed tips, but never medical diagnoses. \
+                - **Nutrition:** Suggest calorie needs, healthy foods, and portion control in a simple way. \
+                - **Fitness:** Provide short workout tips suited to different fitness levels. \
+                - **Habits & Motivation:** Encourage users with short, motivating tips. \
+                - **Engagement:** Stay friendly, clear, and easy to understand. No technical jargon. \
+                - **Safety:** If asked about medical issues, suggest seeing a doctor istead of answering. \
+                - **Positive Tone:** Always be supportive and encouraging, keeping users motivated."
+            },
+            {"role": "user", "content": user_input}
+        ]
+        
+        # Send request to Ollama
+        response = ollama.chat(model="mistral", messages=messages)
+        
+        # Extract response text
+        response_text = response['message']['content']
+
+    return render_template('chatbot.html', response_text=response_text)
 
 if __name__ == "__main__":
     app.run(debug=True)

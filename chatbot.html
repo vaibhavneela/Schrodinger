@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Chatbot</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body class="container mt-5">
+    <h2 class="text-center">Health Chatbot</h2>
+
+    <form method="POST" class="text-center">
+        <textarea name="user_input" class="form-control" placeholder="Ask me anything about health..." required></textarea>
+        <button type="submit" class="btn btn-primary mt-2">Ask</button>
+    </form>
+
+    {% if response_text %}
+        <div class="alert alert-info mt-3 text-center">
+            <strong>Chatbot:</strong> {{ response_text }}
+        </div>
+    {% endif %}
+
+    <!-- Return to Dashboard Button -->
+    <div class="text-center mt-4">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Return to Dashboard</a>
+    </div>
+
+</body>
+</html>
